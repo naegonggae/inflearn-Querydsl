@@ -247,5 +247,43 @@ public class QuerydslApplicationTest {
 				.containsExactly("teamA", "teamB");
 	}
 	
+	@Test
+	public void join_on_filtering() throws Exception {
+	    // 회원과 팀을 조인하면서, 팀 이름이 teamA 인 팀만 조인, 회원은 모두 조회
+		// JPQL : select m, t from Member m left join m.team t on t.name = "teamA";
+		List<Tuple> result = jpaQueryFactory
+				.select(member, team)
+				.from(member)
+//				.leftJoin(member.team, team).on(team.name.eq("teamA"))
+				// left join 하고 on 절 사용하는게 inner join 하고 where 조건 하는거랑 결과가 같음
+				// 이럴땐 inner join, where 사용한다고 함 익숙하니까
+				.join(member.team, team)
+				.where(team.name.eq("teamA"))
+				.fetch();
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+	}
+
+	@Test
+	public void join_on_no_relation() throws Exception {
+		em.persist(new Member("teamA"));
+		em.persist(new Member("teamB"));
+
+		//연관관계가 없는 엔티티를 외부조인 on 을 사용해서 가능하게 됨 -> 하이버네이트 5.1 부터
+		//회원의 이름과 팀이름이 같은 대상을 외부조인해라
+		List<Tuple> result = jpaQueryFactory
+				.select(member, team)
+				.from(member)
+				// 전혀 연관관계 없는 테이블들도 외부 조인 할 수 있는 방법이 생겼다함
+				.leftJoin(team).on(member.username.eq(team.name)) // 그냥 쌩팀으로 left join 해버림 / id 매칭이 안되니까 on 절의 이름으로만 매칭이됨
+				// .leftJoin(member.team, team) 원래는 이런식으로 들어가서 on 절에서 id 값이 들어가서 join 하는 대상이 id 로 매칭이 됨 team.id == member.team.id
+				.fetch();
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+	}
+	
+	
 
 }
