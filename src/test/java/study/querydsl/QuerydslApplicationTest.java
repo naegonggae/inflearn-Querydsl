@@ -69,6 +69,28 @@ public class QuerydslApplicationTest {
 				.where(member.username.eq("member1")) // 파라미터 바인딩을 자동으로 해줌 eq= 같다는의미
 				.fetchOne(); // 아마 단건조회
 		assertThat(findMember.getUsername()).isEqualTo("member1");
+	}
 
+	@Test
+	void search() {
+		Member findMember = jpaQueryFactory
+				.selectFrom(member) // select from 을 줄일 수 있다.
+				.where(member.username.eq("member1").and(member.age.eq(10))) // .and .or 로 계속 이어나갈 수 있음
+				.fetchOne();
+		assertThat(findMember.getUsername()).isEqualTo("member1");
+		assertThat(findMember.getAge()).isEqualTo(10);
+	}
+
+	@Test
+	void searchAndParam() {
+		Member findMember = jpaQueryFactory
+				.selectFrom(member) // select from 을 줄일 수 있다.
+				.where(
+						member.username.eq("member1"),
+						member.age.eq(10) // 요 방법이 동적쿼리에서 빛을 발함
+				) // and 는 요렇게 도 가능 / 외에 여러 연산자가 있음
+				.fetchOne();
+		assertThat(findMember.getUsername()).isEqualTo("member1");
+		assertThat(findMember.getAge()).isEqualTo(10);
 	}
 }
