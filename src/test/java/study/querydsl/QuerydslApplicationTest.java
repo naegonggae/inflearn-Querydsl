@@ -2,8 +2,10 @@ package study.querydsl;
 
 import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*;
+import static study.querydsl.entity.QTeam.team;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
+import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 @SpringBootTest
@@ -169,6 +172,48 @@ public class QuerydslApplicationTest {
 		assertThat(queryResults.getLimit()).isEqualTo(2);
 		assertThat(queryResults.getOffset()).isEqualTo(1);
 		assertThat(queryResults.getResults().size()).isEqualTo(2);
+	}
+
+	@Test
+	void aggregation() {
+		List<Tuple> result = jpaQueryFactory // queryDsl 에서 지원하는 튜플이야
+				.select( // 튜플로 왜 뽑냐? 형태가 다달라서 / 근데 튜플 스타일을 자주 사용하지 않고 Dto 형태로 뽑아서 쓸거야
+						member.count(),
+						member.age.sum(),
+						member.age.max(),
+						member.age.min(),
+						member.age.avg()
+				)
+				.from(member)
+				.fetch(); // 어짜피 하나임
+		Tuple tuple = result.get(0); // 하나니까 꺼내와
+		assertThat(tuple.get(member.count())).isEqualTo(4); // 꺼낼때 그대로 꺼내
+		assertThat(tuple.get(member.age.sum())).isEqualTo(100);
+		assertThat(tuple.get(member.age.max())).isEqualTo(40);
+		assertThat(tuple.get(member.age.avg())).isEqualTo(25);
+		assertThat(tuple.get(member.age.min())).isEqualTo(10);
+	}
+
+	@Test
+	public void group() throws Exception {
+		// 팀의 이름과 각 팀의 평균 연령을 구해라
+		List<Tuple> result = jpaQueryFactory
+				.select(team.name, member.age.avg())
+				.from(member)
+				.join(member.team, team)
+				.groupBy(team.name) // having 도 가능 ex. 1000원 넘는 가격만 groupBy 해라
+				.fetch();
+		Tuple teamA = result.get(0);
+		Tuple teamB = result.get(1);
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+		assertThat(teamA.get(team.name)).isEqualTo("teamA");
+		assertThat(teamA.get(member.age.avg())).isEqualTo(15);
+
+		assertThat(teamB.get(team.name)).isEqualTo("teamB");
+		assertThat(teamB.get(member.age.avg())).isEqualTo(35);
 
 	}
+
 }
