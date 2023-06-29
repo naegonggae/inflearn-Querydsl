@@ -143,4 +143,32 @@ public class QuerydslApplicationTest {
 		assertThat(member6.getUsername()).isEqualTo("member6");
 		assertThat(memberNull.getUsername()).isNull(); // 마지막에 이름없는거 저장했으니 null 뜰거다
 	}
+
+	@Test
+	void paging1() {
+		List<Member> result = jpaQueryFactory
+				.selectFrom(member)
+				.orderBy(member.username.desc())
+				.offset(1) // 앞에 몇개 짤라 먹을거야?
+				.limit(2) // 몇개씩 가져올거야?
+				.fetch();
+		assertThat(result.size()).isEqualTo(2);
+	}
+
+	@Test
+	void paging2() {
+		// 실무에서는 이렇게하면 쿼리두개 나가니까 상황보고 count 쿼리를 따로 해주라한다.
+		// 근데 fetchResults 이거 막힌거 보니까 무조건 따로 날리는 쪽으로 가야하나보다
+		QueryResults<Member> queryResults = jpaQueryFactory
+				.selectFrom(member)
+				.orderBy(member.username.desc())
+				.offset(1) // 앞에 몇개 짤라 먹을거야?
+				.limit(2) // 몇개씩 가져올거야?
+				.fetchResults();
+		assertThat(queryResults.getTotal()).isEqualTo(4);
+		assertThat(queryResults.getLimit()).isEqualTo(2);
+		assertThat(queryResults.getOffset()).isEqualTo(1);
+		assertThat(queryResults.getResults().size()).isEqualTo(2);
+
+	}
 }
