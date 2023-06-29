@@ -98,18 +98,18 @@ public class QuerydslApplicationTest {
 
 	@Test
 	void resultFetch() {
-//		List<Member> fetch = jpaQueryFactory
-//				.selectFrom(member)
-//				.fetch(); // 리스트 조회
-//
-//		Member fetchOne = jpaQueryFactory
-//				.selectFrom(member)
-//				.fetchOne();// 단건조회, 없으면 null 두개면 예외발생
-//
-//		Member fetchFirst = jpaQueryFactory
-//				.selectFrom(member)
-////				.limit(1).fetchOne() / == fetchFirst
-//				.fetchFirst();
+		List<Member> fetch = jpaQueryFactory
+				.selectFrom(member)
+				.fetch(); // 리스트 조회
+
+		Member fetchOne = jpaQueryFactory
+				.selectFrom(member)
+				.fetchOne();// 단건조회, 없으면 null 두개면 예외발생
+
+		Member fetchFirst = jpaQueryFactory
+				.selectFrom(member)
+//				.limit(1).fetchOne() / == fetchFirst
+				.fetchFirst();
 
 		QueryResults<Member> results = jpaQueryFactory // 페이징에서 사용 / 성능이 중요시 되는 곳에서는 이렇게 하지말고 쿼리 두개를 따로 날려야함
 				.selectFrom(member)
@@ -121,6 +121,26 @@ public class QuerydslApplicationTest {
 		long count = jpaQueryFactory // 토탈카운트
 				.selectFrom(member)
 				.fetchCount();// member select 하는 쿼리를 카운트 쿼리로 바꾸는데 이거도 사용안하네...
+	}
 
+	@Test
+	void sort() {
+		em.persist(new Member(null, 100));
+		em.persist(new Member("member5", 100));
+		em.persist(new Member("member6", 100));
+
+		List<Member> result = jpaQueryFactory
+				.selectFrom(member)
+				.where(member.age.eq(100))
+				.orderBy(member.age.desc(), member.username.asc().nullsLast())
+				// 나이는 내림차순 어차피 100이라 상관없고, 이름은 오름차순, 이름없으면 마지막에 null 출력
+				.fetch();
+
+		Member member5 = result.get(0);
+		Member member6 = result.get(1);
+		Member memberNull = result.get(2);
+		assertThat(member5.getUsername()).isEqualTo("member5");
+		assertThat(member6.getUsername()).isEqualTo("member6");
+		assertThat(memberNull.getUsername()).isNull(); // 마지막에 이름없는거 저장했으니 null 뜰거다
 	}
 }
