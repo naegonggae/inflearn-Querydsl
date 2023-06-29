@@ -213,7 +213,39 @@ public class QuerydslApplicationTest {
 
 		assertThat(teamB.get(team.name)).isEqualTo("teamB");
 		assertThat(teamB.get(member.age.avg())).isEqualTo(35);
-
 	}
+
+	@Test
+	public void join() throws Exception {
+	    // teamA 에 소속된 member 를 모두 찾아라
+		List<Member> result = jpaQueryFactory
+				.selectFrom(member)
+				.join(member.team, team) // left, right, inner join 다 가능
+				.where(team.name.eq("teamA"))
+				.fetch();
+
+		assertThat(result)
+				.extracting("username")
+				.containsExactly("member1", "member2");
+	}
+	
+	@Test
+	public void thetaJoin() throws Exception {
+		em.persist(new Member("teamA"));
+		em.persist(new Member("teamB"));
+
+		//세타 조인 사람 이름과 팀이름이 같은 사람을 조회
+		List<Member> result = jpaQueryFactory
+				.select(member)
+				.from(member, team) // member 와 team 을 다가져와서 막 조인해서 찾는것임 / 보통 DB 가 성능최적화를 하긴할거임 / 막조인
+				// 전혀 연관관계 없는 테이블들도 외부 조인 할 수 있는 방법이 생겼다함
+				// 실제 쿼리는 크로스 조인함
+				.where(member.username.eq(team.name))
+				.fetch();
+		assertThat(result)
+				.extracting("username")
+				.containsExactly("teamA", "teamB");
+	}
+	
 
 }
