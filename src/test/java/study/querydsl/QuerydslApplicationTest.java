@@ -3,8 +3,10 @@ package study.querydsl;
 import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,5 +94,33 @@ public class QuerydslApplicationTest {
 				.fetchOne();
 		assertThat(findMember.getUsername()).isEqualTo("member1");
 		assertThat(findMember.getAge()).isEqualTo(10);
+	}
+
+	@Test
+	void resultFetch() {
+//		List<Member> fetch = jpaQueryFactory
+//				.selectFrom(member)
+//				.fetch(); // 리스트 조회
+//
+//		Member fetchOne = jpaQueryFactory
+//				.selectFrom(member)
+//				.fetchOne();// 단건조회, 없으면 null 두개면 예외발생
+//
+//		Member fetchFirst = jpaQueryFactory
+//				.selectFrom(member)
+////				.limit(1).fetchOne() / == fetchFirst
+//				.fetchFirst();
+
+		QueryResults<Member> results = jpaQueryFactory // 페이징에서 사용 / 성능이 중요시 되는 곳에서는 이렇게 하지말고 쿼리 두개를 따로 날려야함
+				.selectFrom(member)
+				.fetchResults(); // .fetch() 대체 사용 권장 / count 쿼리 + member 찾아오는 쿼리 = 총 2개나감
+		System.out.println("===");
+		results.getTotal();
+		List<Member> content = results.getResults();
+
+		long count = jpaQueryFactory // 토탈카운트
+				.selectFrom(member)
+				.fetchCount();// member select 하는 쿼리를 카운트 쿼리로 바꾸는데 이거도 사용안하네...
+
 	}
 }
