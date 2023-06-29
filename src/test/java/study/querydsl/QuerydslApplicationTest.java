@@ -1,6 +1,7 @@
 package study.querydsl;
 
 import static org.assertj.core.api.Assertions.*;
+import static study.querydsl.entity.QMember.*;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -56,13 +57,16 @@ public class QuerydslApplicationTest {
 		// 동시에 쓰도록 설정가능
 //		JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(em); // 엔티티 매니저로 데이터를 찾는거 설정한거임
 
-		QMember m = new QMember("m"); //"m" 변수명 즉, 별칭 설정 근데 중요하지는 않다고함
+//		QMember m = new QMember("m"); //"m" 변수명 즉, 별칭 설정 근데 중요하지는 않다고함
+//		QMember m = QMember.member; // 이미 생성된걸 사용해도됨 QMember.member 내부에 있음
+		// 여기서 더 줄일 수 있음 -> static import 사용해서 완전히 주석처리
+		// 대신 같은 테이블을 join 해야할때는 별칭을 따로 선언해줘야한다.
 
 		// 강점 : Jpql 에 비해 컴파일시 오류를 잡아준다.
 		Member findMember = jpaQueryFactory
-				.select(m)
-				.from(m)
-				.where(m.username.eq("member1")) // 파라미터 바인딩을 자동으로 해줌 eq= 같다는의미
+				.select(member) // 요렇게 보라색 글씨로 나옴 이렇게 쓰는걸 권장
+				.from(member)
+				.where(member.username.eq("member1")) // 파라미터 바인딩을 자동으로 해줌 eq= 같다는의미
 				.fetchOne(); // 아마 단건조회
 		assertThat(findMember.getUsername()).isEqualTo("member1");
 
