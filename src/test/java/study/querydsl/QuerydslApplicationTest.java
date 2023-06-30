@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -569,10 +570,24 @@ public class QuerydslApplicationTest {
 		List<UserDto> result = jpaQueryFactory
 				.select(Projections.constructor(UserDto.class, // 생성자는 필드와 다르게 이름말고 타입을 보고 들어가서 호환됨
 						member.username,
-						member.age))
+						member.age,
+						member.id)) //** 이렇게 하면 런타임 오류 즉, 사용자가 눌렀을때서야 오류가 난다. 컴파일 오류를 못잡는다
 				.from(member)
 				.fetch();
 		for (UserDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+
+	@Test
+	void findDtoByQueryProjection() {
+		// 생성자 호출되는것도 로그 찍힘
+		// 단점 : Q 파일을 생성해야함, DTO 는 기존에 쿼리 DSL 이란걸 몰랐는데 의존성이 주입된 느낌 / dto 가 순수하지않고 queryDsl 에 의존적으로 바뀜 사용되는곳은 많은데
+		List<MemberDto> result = jpaQueryFactory
+				.select(new QMemberDto(member.username, member.age)) // dto 생성자 파라미터대로 사용하면되니까 아주 편리 /** 근데 이방식은 컴파일 오류로 잡아준다.
+				.from(member)
+				.fetch();
+		for (MemberDto memberDto : result) {
 			System.out.println("memberDto = " + memberDto);
 		}
 	}
