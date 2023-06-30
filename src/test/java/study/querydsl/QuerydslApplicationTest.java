@@ -6,7 +6,9 @@ import static study.querydsl.entity.QTeam.team;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -430,5 +432,29 @@ public class QuerydslApplicationTest {
 		}
 		// DB 에서는 row 데이터를 필터링하고 그룹핑하고 이런 작업(데이터를 줄이는 일)을 수행하지 이런 조건식은 권장하지 않는다
 		// 그래서 실제로 예시는 나이를 다 가져오고 애플리케이션 레벨이나 프레젠테이션 레벨에서 조건에따라 표현을 달리한다.
+	}
+
+	@Test
+	void constant() {
+		List<Tuple> result = jpaQueryFactory
+				.select(member.username, Expressions.constant("A"))
+				.from(member)
+				.fetch();
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+	}
+
+	@Test
+	void concat() {
+		// {username}_{age}
+		List<String> result = jpaQueryFactory
+				.select(member.username.concat("_").concat(member.age.stringValue())) //stringValue 문자로 변환
+				.from(member)
+				.where(member.username.eq("member1"))
+				.fetch();
+		for (String s : result) {
+			System.out.println("s = " + s);
+		}
 	}
 }
