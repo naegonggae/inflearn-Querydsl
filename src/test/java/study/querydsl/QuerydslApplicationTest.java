@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*;
 import static study.querydsl.entity.QTeam.team;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
@@ -590,5 +591,32 @@ public class QuerydslApplicationTest {
 		for (MemberDto memberDto : result) {
 			System.out.println("memberDto = " + memberDto);
 		}
+	}
+
+	@Test
+	void dynamicQuery_BooleanBuilder() {
+		String usernameParam = "member1";
+		Integer ageParam = 10;
+
+		List<Member> result = searchMember1(usernameParam, ageParam);
+		assertThat(result.size()).isEqualTo(1);
+	}
+
+	private List<Member> searchMember1(String usernameCond, Integer ageCond) {
+		BooleanBuilder booleanBuilder = new BooleanBuilder();
+//		BooleanBuilder booleanBuilder = new BooleanBuilder(member.username.eq(usernameCond)); // 이렇게 초기값을 지정해 놓을 수 도있어
+
+		if (usernameCond != null) {
+			booleanBuilder.and(member.username.eq(usernameCond));
+		}
+		if (ageCond != null) {
+			booleanBuilder.and(member.age.eq(ageCond));
+		}
+
+		return jpaQueryFactory
+				.select(member)
+				.from(member)
+				.where(booleanBuilder) // and or 조립가능
+				.fetch();
 	}
 }
