@@ -6,6 +6,7 @@ import static study.querydsl.entity.QTeam.team;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -83,7 +84,8 @@ public class QuerydslApplicationTest {
 	void search() {
 		Member findMember = jpaQueryFactory
 				.selectFrom(member) // select from 을 줄일 수 있다.
-				.where(member.username.eq("member1").and(member.age.eq(10))) // .and .or 로 계속 이어나갈 수 있음
+				.where(member.username.eq("member1")
+						.and(member.age.eq(10))) // .and .or 로 계속 이어나갈 수 있음
 				.fetchOne();
 		assertThat(findMember.getUsername()).isEqualTo("member1");
 		assertThat(findMember.getAge()).isEqualTo(10);
@@ -220,7 +222,7 @@ public class QuerydslApplicationTest {
 
 	@Test
 	public void join() throws Exception {
-	    // teamA 에 소속된 member 를 모두 찾아라
+		// teamA 에 소속된 member 를 모두 찾아라
 		List<Member> result = jpaQueryFactory
 				.selectFrom(member)
 				.join(member.team, team) // left, right, inner join 다 가능
@@ -231,7 +233,7 @@ public class QuerydslApplicationTest {
 				.extracting("username")
 				.containsExactly("member1", "member2");
 	}
-	
+
 	@Test
 	public void thetaJoin() throws Exception {
 		em.persist(new Member("teamA"));
@@ -240,7 +242,8 @@ public class QuerydslApplicationTest {
 		//세타 조인 사람 이름과 팀이름이 같은 사람을 조회
 		List<Member> result = jpaQueryFactory
 				.select(member)
-				.from(member, team) // member 와 team 을 다가져와서 막 조인해서 찾는것임 / 보통 DB 가 성능최적화를 하긴할거임 / 막조인
+				.from(member,
+						team) // member 와 team 을 다가져와서 막 조인해서 찾는것임 / 보통 DB 가 성능최적화를 하긴할거임 / 막조인
 				// 전혀 연관관계 없는 테이블들도 외부 조인 할 수 있는 방법이 생겼다함
 				// 실제 쿼리는 크로스 조인함
 				.where(member.username.eq(team.name))
@@ -249,10 +252,10 @@ public class QuerydslApplicationTest {
 				.extracting("username")
 				.containsExactly("teamA", "teamB");
 	}
-	
+
 	@Test
 	public void join_on_filtering() throws Exception {
-	    // 회원과 팀을 조인하면서, 팀 이름이 teamA 인 팀만 조인, 회원은 모두 조회
+		// 회원과 팀을 조인하면서, 팀 이름이 teamA 인 팀만 조인, 회원은 모두 조회
 		// JPQL : select m, t from Member m left join m.team t on t.name = "teamA";
 		List<Tuple> result = jpaQueryFactory
 				.select(member, team)
@@ -279,7 +282,8 @@ public class QuerydslApplicationTest {
 				.select(member, team)
 				.from(member)
 				// 전혀 연관관계 없는 테이블들도 외부 조인 할 수 있는 방법이 생겼다함
-				.leftJoin(team).on(member.username.eq(team.name)) // 그냥 쌩팀으로 left join 해버림 / id 매칭이 안되니까 on 절의 이름으로만 매칭이됨
+				.leftJoin(team).on(member.username.eq(
+						team.name)) // 그냥 쌩팀으로 left join 해버림 / id 매칭이 안되니까 on 절의 이름으로만 매칭이됨
 				// .leftJoin(member.team, team) 원래는 이런식으로 들어가서 on 절에서 id 값이 들어가서 join 하는 대상이 id 로 매칭이 됨 team.id == member.team.id
 				.fetch();
 		for (Tuple tuple : result) {
@@ -397,7 +401,34 @@ public class QuerydslApplicationTest {
 		//데이터 가져오는데 집중하고 뷰 형식 맞추는건 프론트에서 하는걸로 / 쿼리로 어떻게든 다 풀려고 하지마
 		//한방 쿼리가 무조건 좋나? 트래픽을 신경쓰는 곳이라면 이미 캐시등의 대책을 마련했다...
 	}
-	
-	
 
+	@Test
+	void basicCase() {
+		List<String> result = jpaQueryFactory
+				.select(member.age
+						.when(10).then("열살")
+						.when(20).then("스무살")
+						.otherwise("기타"))
+				.from(member)
+				.fetch();
+		for (String s : result) {
+			System.out.println("s = " + s);
+		}
+	}
+
+	@Test
+	void complexCase() {
+		List<String> result = jpaQueryFactory
+				.select(new CaseBuilder()
+						.when(member.age.between(0, 20)).then("0~20살")
+						.when(member.age.between(21, 40)).then("21~40살")
+						.otherwise("기타"))
+				.from(member)
+				.fetch();
+		for (String s : result) {
+			System.out.println("s = " + s);
+		}
+		// DB 에서는 row 데이터를 필터링하고 그룹핑하고 이런 작업(데이터를 줄이는 일)을 수행하지 이런 조건식은 권장하지 않는다
+		// 그래서 실제로 예시는 나이를 다 가져오고 애플리케이션 레벨이나 프레젠테이션 레벨에서 조건에따라 표현을 달리한다.
+	}
 }
