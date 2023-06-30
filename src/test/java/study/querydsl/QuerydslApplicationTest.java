@@ -9,7 +9,9 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -593,6 +595,7 @@ public class QuerydslApplicationTest {
 		}
 	}
 
+	// 동적 쿼리 - BooleanBuilder 사용
 	@Test
 	void dynamicQuery_BooleanBuilder() {
 		String usernameParam = "member1";
@@ -619,4 +622,45 @@ public class QuerydslApplicationTest {
 				.where(booleanBuilder) // and or 조립가능
 				.fetch();
 	}
+
+	// 동적 쿼리 - Where 다중 파라미터 사용
+	@Test
+	void dynamicQuery_WhereParam() {
+		String usernameParam = "member1";
+		Integer ageParam = 10;
+
+		List<Member> result = searchMember2(usernameParam, ageParam);
+		assertThat(result.size()).isEqualTo(1);
+	}
+
+	private List<Member> searchMember2(String usernameCond, Integer ageCond) {
+		return jpaQueryFactory
+				.selectFrom(member)
+				.where(usernameEq(usernameCond), ageEq(ageCond)) // null 이 들어오면 무시함
+//				.where(allEq(usernameCond, ageCond)) // 메서드 조립한거 사용가능
+				.fetch();
+	}
+
+	private BooleanExpression usernameEq(String usernameCond) {
+		if (usernameCond == null) {
+			return null;
+		}
+		return member.username.eq(usernameCond);
+		// 삼항 연산자로 많이 풀어서 씀
+//		return usernameCond != null ? member.username.eq(usernameCond) : null;
+	}
+
+	private BooleanExpression ageEq(Integer ageCond) { // 조립할려면 타입을 Predicate 가 아니라 BooleanExpression 으로 해줘야함
+		if (ageCond == null) {
+			return null;
+		}
+		return member.age.eq(ageCond);
+	}
+
+	// 재사용이 가능하다. 의미있는 메서드를 만들수 있다.
+	// 예를들어 광고가 유효한지 isValid(), 기한 betweenDate() 합쳐서 isServicable() 같은거 만들수 있음
+	private Predicate allEq(String usernameCond, Integer ageCond) {
+		return usernameEq(usernameCond).and(ageEq(ageCond));
+	}
+	// 장점 메서드를 조립할 수 잇다.
 }
