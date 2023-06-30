@@ -457,4 +457,31 @@ public class QuerydslApplicationTest {
 			System.out.println("s = " + s);
 		}
 	}
+
+	@Test
+	void simpleProjection() { // select 에 넣는걸 프로잭션이라고 한다.
+		List<String> result = jpaQueryFactory
+				.select(member.username) // select 를 username 만 했기때문에 String 으로 받는다
+				.from(member)
+				.fetch();
+		for (String s : result) {
+			System.out.println("s = " + s);
+		}
+	}
+
+	@Test
+	void tupleProjection() {
+		// 튜플을 리포지토리에서는 사용해도 괜찮을지몰라도 서비스나 컨트롤러에서 사용하면 안된다. 쓸거면 dto 로 바꿔서 사용해라
+		List<Tuple> result = jpaQueryFactory
+				.select(member.username, member.age)
+				.from(member)
+				.fetch();
+		for (Tuple tuple : result) { // 튜플 사용법
+			System.out.println("tuple = " + tuple);
+			String username = tuple.get(member.username);
+			Integer age = tuple.get(member.age);
+			System.out.println("username = " + username);
+			System.out.println("age = " + age);
+		}
+	}
 }
