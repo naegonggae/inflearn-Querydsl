@@ -6,6 +6,7 @@ import static study.querydsl.entity.QTeam.team;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -316,6 +317,85 @@ public class QuerydslApplicationTest {
 				.fetchOne();
 		boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
 		assertThat(loaded).as("페치조인 적용").isTrue();
+	}
+
+	@Test
+	void subQuery() {
+		// 나이가 가장 많은 회원 조회
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = jpaQueryFactory
+				.select(member)
+				.from(member)
+				.where(member.age.eq(
+						JPAExpressions // 내부에 쿼리 작성
+								.select(memberSub.age.max()) // member 와 다르게 지정해줘야함
+								.from(memberSub)
+				))
+				.fetch();
+		assertThat(result).extracting("age")
+				.containsExactly(40);
+	}
+
+	@Test
+	void subQueryGoe() {
+		// 나이가 평균이상인 회원 조회
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = jpaQueryFactory
+				.select(member)
+				.from(member)
+				.where(member.age.goe( // 크거나 같다
+						JPAExpressions // 내부에 쿼리 작성
+								.select(memberSub.age.avg()) // member 와 다르게 지정해줘야함
+								.from(memberSub)
+				))
+				.fetch();
+		assertThat(result).extracting("age")
+				.containsExactly(30, 40);
+	}
+
+	@Test
+	void subQueryIn() {
+		// 나이가 평균이상인 회원 조회
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = jpaQueryFactory
+				.select(member)
+				.from(member)
+				.where(member.age.in( // 크거나 같다
+						JPAExpressions // 내부에 쿼리 작성
+								.select(memberSub.age) // member 와 다르게 지정해줘야함
+								.from(memberSub)
+								.where(memberSub.age.gt(10)) // 보다 크다
+				))
+				.fetch();
+		assertThat(result).extracting("age")
+				.containsExactly(20, 30, 40);
+	}
+
+	@Test
+	void selectSubQuery() {
+		QMember memberSub = new QMember("memberSub");
+
+		List<Tuple> result = jpaQueryFactory
+				.select(member.username, // select 내부 쿼리
+						JPAExpressions
+								.select(memberSub.age.avg())
+								.from(memberSub))
+				.from(member)
+				.fetch();
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+		// from 절은 서브쿼리 지원안함
+		//1. 서브쿼리를 join 으로 변경
+		//2. 쿼리 두번으로 나눠서 실행
+		//3. 네이티브 SQL 사용
+
+		//너무 뷰에 의존해서 SQL 문을 짜려하다보니 쿼리가 복잡해진다.
+		//데이터 가져오는데 집중하고 뷰 형식 맞추는건 프론트에서 하는걸로 / 쿼리로 어떻게든 다 풀려고 하지마
+		//한방 쿼리가 무조건 좋나? 트래픽을 신경쓰는 곳이라면 이미 캐시등의 대책을 마련했다...
 	}
 	
 	
