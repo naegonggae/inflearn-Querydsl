@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;
@@ -663,4 +664,44 @@ public class QuerydslApplicationTest {
 		return usernameEq(usernameCond).and(ageEq(ageCond));
 	}
 	// 장점 메서드를 조립할 수 잇다.
+
+	@Test
+//	@Commit
+	void bulkUpdate() {
+		// 영속성 컨텍스트를 무시하고 바로 DB에 값을 박아버림
+		long count = jpaQueryFactory
+				.update(member)
+				.set(member.username, "비회원")
+				.where(member.age.lt(28)) // member1, 2 만 비회원으로 바뀌고 나머지는 유지
+				.execute();
+
+		em.flush();
+		em.clear();
+
+		// 근데 아직 영속성컨텍스트에 member 1~4 가 있음 -> 이상태에서 조회를 하면 영속성컨텍스트에 있는걸 걍 가져옴 DB 까지 안뒤지고 -> 그래서 비워줘라
+		List<Member> result = jpaQueryFactory
+				.selectFrom(member)
+				.fetch();
+		for (Member member1 : result) {
+			System.out.println("member1 = " + member1);
+		}
+	}
+
+	@Test
+	void bulkAdd() {
+		long count = jpaQueryFactory
+				.update(member)
+				.set(member.age, member.age.add(2)) // 더하기
+//				.set(member.age, member.age.add(-1)) // 빼기
+//				.set(member.age, member.age.multiply(2)) // 곱하기
+				.execute();
+	}
+
+	@Test
+	void bulkDelete() {
+		long delete = jpaQueryFactory
+				.delete(member)
+				.where(member.age.gt(18))
+				.execute();
+	}
 }
