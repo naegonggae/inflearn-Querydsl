@@ -61,7 +61,7 @@ class MemberJpaRepositoryTest {
 		// 그래서 limit 를 걸거나, paging 을 하거나 기본조건을 해놔야한다.
 		// 데이터가 별로 없다면 상관없지만...
 
-		List<MemberTeamDto> result = memberJpaRepository.searchByBuilder(condition);
+		List<MemberTeamDto> result = memberJpaRepository.search(condition); // 여기 메서드만 바꿔가면서 테스트중
 		assertThat(result).extracting("username").containsExactly("member4");
 	}
 
