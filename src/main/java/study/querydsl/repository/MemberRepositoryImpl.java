@@ -100,7 +100,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
 //		return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetchOne());
 //		return new PageImpl<>(content, pageable, total); // PageImpl 이 Page 의 구현체임
 
-		// count 쿼리가 생략 가능한 경우 생략해서 처리
+		// count 쿼리가 생략 가능한 경우 생략해서 처리 / 진짜 안나감
 		//페이지 시작이면서 컨텐츠 사이즈가 페이지 사이즈보다 작을 때
 		//마지막 페이지 일 때 (offset + 컨텐츠 사이즈를 더해서 전체 사이즈 구함, 더 정확히는 마지막 페이지 이면서 컨텐츠 사이즈가 페이지 사이즈보다 작을 때)
 	}
