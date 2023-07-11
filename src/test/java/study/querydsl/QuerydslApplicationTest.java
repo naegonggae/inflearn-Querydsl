@@ -89,6 +89,22 @@ public class QuerydslApplicationTest {
 				.where(member.username.eq("member1")) // 파라미터 바인딩을 자동으로 해줌 eq= 같다는의미
 				.fetchOne(); // 아마 단건조회
 		assertThat(findMember.getUsername()).isEqualTo("member1");
+		System.out.println("1 = " + findMember);
+
+		// JPQL
+		List<Member> findMember2 = em.createQuery(
+						"select m from Member m where m.username=:username", Member.class)
+				.setParameter("username", "member1")
+				.getResultList();
+		for (Member member1 : findMember2) {
+			System.out.println("2 = " + member1);
+		}
+
+		// SQL
+		// select m1_0.member_id,m1_0.age,m1_0.team_id,m1_0.username
+		// from member m1_0
+		// where m1_0.username='member1';
+
 	}
 
 	@Test
@@ -100,6 +116,22 @@ public class QuerydslApplicationTest {
 				.fetchOne();
 		assertThat(findMember.getUsername()).isEqualTo("member1");
 		assertThat(findMember.getAge()).isEqualTo(10);
+		System.out.println("1 = " + findMember);
+
+		// JPQL
+		List<Member> findMember2 = em.createQuery(
+						"select m from Member m where m.username=:username and m.age=:age", Member.class)
+				.setParameter("username", "member1")
+				.setParameter("age", 10)
+				.getResultList();
+		for (Member member1 : findMember2) {
+			System.out.println("2 = " + member1);
+		}
+
+		// SQL
+		// select m1_0.member_id,m1_0.age,m1_0.team_id,m1_0.username
+		// from member m1_0
+		// where m1_0.username='member1' and m1_0.age=10;
 	}
 
 	@Test
@@ -113,6 +145,20 @@ public class QuerydslApplicationTest {
 				.fetchOne();
 		assertThat(findMember.getUsername()).isEqualTo("member1");
 		assertThat(findMember.getAge()).isEqualTo(10);
+		System.out.println("1 = " + findMember);
+
+		// JPQL
+		Member findMember2 = em.createQuery(
+						"select m from Member m where m.username=:username and m.age=:age", Member.class)
+				.setParameter("username", "member1")
+				.setParameter("age", 10)
+				.getSingleResult();
+		System.out.println("2 = " + findMember2);
+
+		// SQL
+		// select m1_0.member_id,m1_0.age,m1_0.team_id,m1_0.username
+		// from member m1_0
+		// where m1_0.username='member1' and m1_0.age=10;
 	}
 
 	@Test
@@ -120,19 +166,40 @@ public class QuerydslApplicationTest {
 		List<Member> fetch = jpaQueryFactory
 				.selectFrom(member)
 				.fetch(); // 리스트 조회
+		System.out.println("1 = " + fetch);
+		// JPQL
+		List<Member> result = em.createQuery("select m from Member m", Member.class)
+				.getResultList();
+		System.out.println("2 = " + result);
 
-		Member fetchOne = jpaQueryFactory
-				.selectFrom(member)
-				.fetchOne();// 단건조회, 없으면 null 두개면 예외발생
+		// SQL
+		// select m1_0.member_id,m1_0.age,m1_0.team_id,m1_0.username
+		// from member m1_0;
+
+//		Member fetchOne = jpaQueryFactory
+//				.selectFrom(member)
+//				.fetchOne();// 단건조회, 없으면 null 두개면 예외발생 NonUniqueResultException
 
 		Member fetchFirst = jpaQueryFactory
 				.selectFrom(member)
 //				.limit(1).fetchOne() / == fetchFirst
 				.fetchFirst();
+		System.out.println("3 = " + fetchFirst);
 
 		QueryResults<Member> results = jpaQueryFactory // 페이징에서 사용 / 성능이 중요시 되는 곳에서는 이렇게 하지말고 쿼리 두개를 따로 날려야함
 				.selectFrom(member)
 				.fetchResults(); // .fetch() 대체 사용 권장 / count 쿼리 + member 찾아오는 쿼리 = 총 2개나감
+		System.out.println("4 = " + results.getTotal());
+
+		//JPQL
+		Long result2 = em.createQuery("select count(m) from Member m", Long.class)
+				.getSingleResult();
+		System.out.println("5 = " + result2);
+
+		//SQL
+		//select count(m1_0.member_id)
+		//from member m1_0;
+
 		System.out.println("===");
 		results.getTotal();
 		List<Member> content = results.getResults();
@@ -154,6 +221,9 @@ public class QuerydslApplicationTest {
 				.orderBy(member.age.desc(), member.username.asc().nullsLast())
 				// 나이는 내림차순 어차피 100이라 상관없고, 이름은 오름차순, 이름없으면 마지막에 null 출력
 				.fetch();
+		for (Member member1 : result) {
+			System.out.println("1 = " + member1);
+		}
 
 		Member member5 = result.get(0);
 		Member member6 = result.get(1);
@@ -161,6 +231,15 @@ public class QuerydslApplicationTest {
 		assertThat(member5.getUsername()).isEqualTo("member5");
 		assertThat(member6.getUsername()).isEqualTo("member6");
 		assertThat(memberNull.getUsername()).isNull(); // 마지막에 이름없는거 저장했으니 null 뜰거다
+
+		//JPQL
+		List<Member> result2 = em.createQuery(
+						"select m from Member m where m.age=:age order by m.age desc, m.username asc ",
+						Member.class)
+				.getResultList();
+		for (Member member1 : result2) {
+			System.out.println("2 = " + member1);
+		}
 	}
 
 	@Test
